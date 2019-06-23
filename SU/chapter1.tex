@@ -1,0 +1,334 @@
+\chapter{地震数据基本操作}
+\section{获得帮助}
+
+
+\begin{enumerate}
+	\item[suhelp] 显示可执行的程序和Shell脚本。
+	\item[suname] 列出SU中各项命令的名字和简短描述，以及编码的地址。
+	\item[sudoc] 得到编码的DOC列表，列出SU中各条目的在线文档。更加具体
+	\item[sufind] 在自述文档中得到信息，使用给定的字符串查找SU命令。
+	\item[Demo] SU软件包中有一套Shell脚本演示程序。
+	放在目录CWPROOT/src/demos,CWPROOT/src/demos/README文件是这些演示程序的说明书。
+	Making Data 演示程序显示使用susynlv程序制作合成记录炮集和共偏移距道集的基础内容。应当特别注意演示中好的标注风格。
+	Filter/Sufilter 使用实际数据处理例子演示说明消除地滚波和初至。
+	Deconvolution 使用supef和其它工具简单合成脉冲道集来实例说明去混响和脉冲反褶积处理。演示程序包括使用loops系统检验滤波参数影响的命令。
+	\item[sukeyword] 列出SU道头中的关键字  sukeyword –o
+	\item[基本用法] SU基本用法是通过创建Shell脚本来实现相应的数据处理。su/examples目录下有很多这样的例子。   
+\end{enumerate}   
+
+
+\section{道头操作}
+SU数据格式继承了SEGY的道头。如果你的数据不是SEGY，而是从其它格式转换得到的，就需要设置一些道头关键字，以使得数据与SU程序协调一致。\\
+\begin{tabular}{lp{0.7\textwidth}}
+	\toprule
+	suaddhead & 在裸数据中写道头，设置道头字\\
+	sustrip & 把SU格式数据中的道头切除并存放在文件中，形成裸数据\\
+	supaste & 把道头文件再粘贴回来，把裸数据添加道头文件生成ＳＵ格式的数据文件\\
+	sukeyword & 文件“segy.h”中SU的关键字指南\\
+	surange & 获得非零道头输入值的范围（最大值和最小值）\\
+	sushw & 设置一个或多个道头字，利用道数、取余数(mod)或整除(integer divide)计算道头字的值，或从一个文件中输入道头字的值\\
+	suchw & 利用一个或两个已存在的道头字来计算新的道头字	\\
+	sugethw & 获取SU数据中道头字的值\\
+	suedit & 检查Segy磁盘文件并编辑道头\\
+	suxedit & 检查Segy磁盘文件并编辑道头\\	
+	suswapbytes & 把SU数据字节顺序从big endian交换为little endian,或者是相反\\
+	\bottomrule
+\end{tabular}
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{ll}
+		\toprule
+		Key & Definition \\
+		\midrule
+		dt &  采样率 microseconds \\ 
+		ns &  一道中采样数 \\
+		ntr & 道数 \\
+		offset & 偏移距 \\
+		tracf & 炮集中道号 field record (gather) \\
+		tracl & 测线中的道号 line \\
+		tracr & 整个数据中道号 reel (entire data set) \\
+		delrt & 延迟时间 milliseconds \\
+		fldr  & 记录炮集号 field record number\\
+		\bottomrule
+	\end{tabular}\\
+	\caption{常见关键字}                   
+\end{table}
+
+\begin{enumerate}
+	\item[suaddhead] suaddhead – 给二进制数据加SU道头 \par
+	如果我们的数据由二进制C浮点型文件组成（例如每道1024个采样点），那么下面命令系列将产生SU数据文件“data.su”:\par
+	\framebox[0.8\textwidth]{suaddhead < data.bin ns=1024 > data.su\hfill}\par
+	对于其它类型（如整型）使用命令recast:
+\begin{lstlisting}[language=python]
+recast < data.ints in=int out=float | suaddhead ns=1024 > data.su\hfill}
+\end{lstlisting}
+	如果数据首先是从Fortran转换而来的整型，那么处理流程为：
+\begin{lstlisting}[language=python]
+ftnstrip < data.fortran | recast in=int out=float | suaddhead ns=1024 > data.su\hfill}\par
+\end{lstlisting}
+	\item[sustrip] 将SU道头与SU数据分离\par
+	命令suaddhead的逆操作就是sustrip.下面的命令行将去掉文件SU道头，并把SU道头存到“data.headers”中，形成裸数据data.bin：\par
+	\framebox[0.8\textwidth]{sustrip < data.su head=data.headers > data.bin\hfill}
+	\item[supaste] 将SU道头与SU数据合成\par
+	对二进制数据完成处理后，我们可能需要把道头粘贴回去，这时用命令supaste。下面的命令行将把文件“data.headers”中的道头内容粘贴回数据中：\par
+	\framebox{supaste < data.bin head=data.headers > data.su}\par
+	\framebox{supaste < data.bin head=data.headers > data.su}\par sukeyword – \item[sukeyword] 查看SU关键字 sukeyword -o\par
+	将显示SU关键字的列表，SU道头中确定有80多个关键字，大多时候只使用其中相对很小的一部分。
+	\item[surange] 获得道头字值的范围\par
+	指定数据中道头字值得范围，对于道头字而言是非常有用的信息。键入：\par
+	\framebox{surange < data.su}\par
+	将返回所有非零SU道头字值得范围。\par
+	请注意，对于损坏的数据来说，很多道头字中可能出现非常奇怪的值，检测这种问题也是surange命令的主要用法之一。
+	\item[sugethw] 获取SU道头字的值\par
+	surange命令可以查看整个数据道头字的范围（最大值和最小值）。但是，我们往往需要按一定的顺序一道一道地查看道头字的值。命令sugethw就是这样的一个工具。例如：\par
+	\framebox{sugethw < data.su key=keyword1,keyword2,... | more}\par
+	下面给出一个具体的例子：\par
+	\framebox{suplane | sugethw key=tracl,tracr,offset,dt,ns | more}\par
+	sugethw对于道头字的排列顺序和个数没有要求，但至少要指定一个道头字。\par
+	如果需要把道头字输出成二进制的文件，可用下面的命令：
+\begin{lstlisting}[language=python]
+suplane | sugethw key=tracl,tracr,offset,dt,ns output=binary > file.bin}
+\end{lstlisting}
+	对于观测系统，你可以使用下面的命令输出到文件中去：
+\begin{lstlisting}[language=python]
+suplane | sugethw key=tracl,tracr,offset,dt,ns output=geom > hdrfile}
+\end{lstlisting}
+	\item[sushw] 在SU数据中设定道头字的值\label{key:sushw}\par
+	命令sushw可根据各种需要来设置道头字的值，该命令可以一次让用户设置一个或多个道头字的值。使用sushw对道头字指定一个固定的值，如我们给数据设定采样间隔：\par
+	\framebox{sushw < data.su key=dt a=2000 > data.out.su}\par\vspace{0.5em}
+	\begin{tabular}{ll}
+		\toprule
+		\multicolumn{2}{l}{sushw指定的可选参数有:}\\
+		\midrule
+			key & 要修改的关键字\\	
+			a & 第一道的值\\		
+			b & 组内增加量\\			
+			c & 组间增加量\\			
+			d & 道偏移量\\			
+			j & 组内元素个数\\
+		\bottomrule
+	\end{tabular}\par\vspace{0.5em}
+	sushw指定的可选参数有：\par
+	这些额外的可选参数可用来做更加复杂的操作。这样做是非常重要的，因为道头字的值与道数据的位置常常有直接的关系。道头字的值用下面的公式计算：
+	$$i = itr + d$$
+	$$val(key) = a + b *  \left( i \% j\right)   + c * \left( i / j \right) )$$
+	这里itr是道号（注意：第一道是itr=0,而非1），\%表示取余数，/表示除法。\par
+	例如，我们可以设定头五道的道头字sx=6400,第二个5道中sx=6300,依次类推，每5道递减100：\par
+	\fbox{sushw < data.su key=sx a=6400 c=-100 j=5 > data.new.su}\par
+	另一个例子，我们设置每5道的offset的值为200：200：1000，命令格式为：\par
+	\fbox{sushw < data.su key=offset a=200 b=200 j=5 > data.out.su}\par
+	我们可以只使用一个sushw命令就可以完成上面3个操作：
+\begin{lstlisting}[language=python] 
+sushw < data.su key=dt,sx,offset a=2000,6400,200 b=0,0,200 c=0,-100,0 j=0,5,5 > newdata.su
+\end{lstlisting}
+	下面是一个实际的例子，tracl从1开始，每隔100道增加1；cdp从1开始，每道增加1，一直增加到100，然后重复从1开始；offset同tracl,只是从0开始；sx同cdp；sy同offset；ns全部设为495；dt全部设为1000：
+	\begin{lstlisting}[language=python] 
+sushw < filename.su key=tracl,cdp,offset,sx,sy,ns,dt a=1,1,0,1,0,495,1000 b=0,1,0,1,0,0,0 c=1,0,1,0,1,0,0 j=100,100,100,100,100,0,0 > filename_new.su
+	\end{lstlisting}
+	\item[suchw] 在SU数据中改变（或计算）道头字的值\par
+	有些道头字（如cdp）可以从已有的道头字计算而来，程序suchw就提供了这种功能。\par
+	参数有：\par
+	\begin{tabular}{ll}
+		\toprule
+		key1 & 输出的关键字\\
+		key2 & 输入的关键字\\
+		key3 & 输入的关键字\\
+		a & 偏移量\\
+		b & key2关键字的倍数\\	
+		c & key3关键字的倍数\\	
+		d & overall scales\\
+		\bottomrule
+	\end{tabular}\par
+	我们可以使用两个道头字的值（key2和key3），利用下面的方程式计算第三个道头字的值(key1):\par
+	\fbox{val(key1) = (a + b * val(key2) + c * val(key3)) / d}\par
+	例如：\par
+	suchw<indata key1=gx,cdp key2=offset,gx key3=sx,sx b=1,1 c=1,1 d=1,2 >outdata
+	\item[suedit和suxedit] 编辑SU数据中道头字的值\par
+	最后，你可能想检查或改变某个道头，suedit和suxedit命令就可以提供这个功能。允许交互浏览和编辑道头字。\par
+	例如：\\
+	\fbox{suplane > data.su}\\
+	\fbox{suedit data.su}\\
+	将得到下面的结果：\\
+	\begin{tabular}{|l|}
+		\toprule
+		32 traces in input file\\
+		tracl=32 tracr=32 offset=400 ns=64 dt=4000\\
+		>  prompt for interactive use\\
+		\bottomrule
+	\end{tabular}\\\\
+	suedit 和suxedit交互使用的命令可以通过在提示符后键入问号（?）显示。例如：\\
+	\begin{tabular}{|l|}
+	\toprule
+	32 traces in input file\\
+	tracl=32 tracr=32 offset=400 ns=64 dt=4000\\
+	>？\\
+	n  read in trace \#n\\
+	<CR>   step	\\
+	+    next trace;\\ 	
+	step -> +1\\	
+	-  prev trace;  \\  	
+	........\\
+	\bottomrule
+	\end{tabular}\\\\
+	该程序让用户将数据采样值按表格形式浏览到数据，或者浏览或改变单个道头字的值。\\
+	程序suxedit和suedit类似，但含有X-Wi
+\end{enumerate}             
+     
+
+\section{数据读写}
+
+\begin{tabular}{lp{0.48\textwidth}}
+	\multicolumn{2}{c}{从磁带上读写数据}\\
+	\toprule
+	\multicolumn{2}{p{0.9\textwidth}}{下面的程序对于地球物理应用中特定的数据输入和输出任务是有用的，对内部SU数据格式也一样}\\
+	\midrule
+	bhedtopar & 把二进制磁带HEaDer文件转换成PAR文件格式\\
+	dt1tosu &  把Sensors,Software X.dtl GPR的地质雷达数据转成SU格式\\
+	segdread & 读取SEGD磁带\\
+	segyclean & zero out unassigned portion of header\\
+	segyread & 读SEGY磁带\\
+	segyhdrs & 为segywrite构造SEGY文件的ascii和二进制头文件SEGYWRITE写SEGY磁带\\
+	setbhed & 设置一个SEGY二进制磁带HEaDer文件的道头字\\
+	suaddhead & 为裸道加上头文件并设置tracl和ns道头字\\
+	sustrip & 从道中去掉SEGY头文件\\
+	supaste & 为已存在的数据加上已存在的SEGY头文件\\
+	\bottomrule	
+\end{tabular}\par
+\mvspace
+\begin{enumerate}
+	\item[SEGY/SU] SEGY格式和SU数据格式\par
+	SEGY数据格式包括三个部分：\par
+	第一个部分是3200字节的EBCDIC卡片，包括40个卡片（等于每行包含80个字符的40行文本），用来磁带。\par
+	第二个部分时400个字节的二进制头文件，含有磁带卷内容的信息。\par
+	第三个部分是真正的地震道数据。每道有240个字节的道头文件。接下来，是32位的IBM浮点型数据（在IBM Form GA 22-6821中定义）。注意，IBM格式和现代IBM PC上所用的IEEE格式是不同的。\par
+	SU数据格式是基于SEGY格式的道部分。SEGY道和SU道的主要不同在于SU格式的道数据是浮点型，是和你运行SU程序的计算机上的浮点格式一致的。SU数据只含有SEGY的道部分！SU格式中不保存EBCDIC和二进制卷头，所以无法在任何SU程序中直接使用SEGY文件。\par
+	为了把SEGY数据转成SU程序所用的格式，需要使用segyread。
+	
+	\item[segyread] 将SEGY数据读入SU\par
+	程序segyread用来把数据从SEGY格式转成SU格式。当读取SEGY磁带或数据文件时，你需要知道你所使用的机器的byte-order（“big-endian”或“little-endian”)。\par
+	在big-endian机器上运行segyread的典型方式如下所示：
+\begin{lstlisting}[language=python] 
+segyread tape=/dev/rmt0 verbose=1 endian=1 > data.su\hfill}\par\mvspace
+\end{lstlisting}
+	更经常使用的是如下的格式来为big-endian平台读入数据：\par
+\begin{lstlisting}[language=python] 
+segyread tape=/dev/rmt0 verbose=1 endian=1 | segyclean >data.su\hfill}\par\mvspace
+\end{lstlisting}
+	在SEGY道头里有可选的道头字（字节181-240）。这些道头字的使用没有标准，所以很多人按自己的需要来填写。SU也不例外。有几个SU图形程序使用的参数存储在这些道头字里。程序segyclean会把可选道头字里容易让SU图形程序产生误解的参数清零。\par
+	糟糕的是有很多号称SEGY格式，但却不符合SEG的标准SEGY格式。最常见的情况就是为了方便，道部分是用IEEE格式。这种IEEE格式数据可用下面的命令来读取：\par
+\begin{lstlisting}[language=python]
+segyread tape=/dev/rmt0 verbose=1 endian=1 conv=0 | segyclean > data.su\hfill
+\end{lstlisting}
+	这里conv=0是告诉程序不进行IBM型到float浮点型的转换。还有DOS SEGY格式，基本与前面相同，除了他的道和头都是用little-endian格式写的。如果用big-endian机器来读的话用下面的命令：\par
+\begin{lstlisting}[language=python]
+segyread tape=/dev/rmt0 verbose=1 endian=0 conv=0 | segyclean > data.su
+\end{lstlisting}
+	注意：endian=0是设置交换字节（所有的字节，头和数据都是交换格式）。在little-endian机器上，程序是：\par
+\begin{lstlisting}[language=python]
+segyread tape=/dev/rmt0 verbose=1 endian=1 conv=0 | segyclean > data.su
+\end{lstlisting}
+	endian=1会阻止交换字节。不管哪种情况，如果我们的磁盘文件名为“filename”，那么应该使用“tape=filename”参数。
+	
+	\item[segywrite]  写SEGY格式的磁带或磁盘文件\par
+	与segyread相对应的命令是segywrite。这个程序可以将SEGY格式按多种不同的方式把数据写到磁带或磁盘文件。该程序可用于把数据写成商业软件可以使用的形式。在学习如何使用segywrite命令之前，有几个需要的准备步骤必须要讨论一下。
+	
+	\item[segyhdrs] 为segywrite准备ascii和二进制头文件。\par
+	要写一个符合SEG数字磁带标准的SEGY格式，你需要提供ASCII和二进制的卷头文件，在SEGY磁带或文件里会变成EBCDIC和二进制的卷头文件。也就是segywrite创建文件时需要有header部分和binary部分。\par
+	如果你没有binary和header文件，你必须用程序sgyhdrs（创建SEG Y文件）来创建它们。命令：\par
+	\framebox[0.9\textwidth]{segyhdrs < data.su\hfill}\par\mvspace
+	会在当前工作目录下写header和binary文件。
+	文件header是一个ASCII文件，可以用正常的文本编辑器来编辑。可以放任意内容，只有格式是每行80个字符的40行。Segywrite会自动把segyhdrs产生的缺省头文件转成下面的格式：\par
+	\mvspace
+	\begin{tabular}{|l|}
+		\hline
+		C This tape was made at the\\
+		C\\
+		C Center for Wave Phenomena\\
+		C Colorado School of Mines\\
+		C Golden, CO, 80401\\
+		C\\
+		...\\
+	   \hline
+	\end{tabular}
+	\item[bhedtopar] 编辑二进制头文件\par
+	要编辑二进制头文件，首先要转成ASCII格式。程序bhedtopar允许把binary文件写成“parfile”的格式：\par
+	\framebox[0.9\textwidth]{bhedtopar < binary outpar=binary.par\hfill}\par\mvspace
+	可以编辑产生的ASCII码文件“binary.par”进行修改，然后通过setbhed来重新读入：\par
+	\framebox[0.9\textwidth]{setbhed bfile=binay par=binary.par\hfill}\par\mvspace
+	也可以单独设置头文件字。例如：\par
+	\framebox[0.9\textwidth]{setbhed bfile=binary par=binary.par lino=3\hfill}\par\mvspace
+	使用了binary.par的内容，但是lino单独设为3。最后，可以通过下面的命令来写磁带：\par
+	\framebox[0.9\textwidth]{segywrite tape=/dev/rmtx verbose=1 < data.su\hfill}\par\mvspace
+	注意header文件和binary文件是在当前目录下的。你也可以使用你自己的文件名。Segywrite的选项bfile=和hfile=用来输入你指定的文件名。
+\end{enumerate}
+
+
+\section{数据格式转换}
+\begin{tabular}{ll}
+	\multicolumn{2}{c}{一般数据输入}\\
+	\toprule
+	\multicolumn{2}{p{0.9\textwidth}}{下面的程序可以用于一般的数据输入，输出和数据格式转换，在磁带读写中也可以使用。}\\
+	\midrule
+	a2b & 把ascii float转成二进制\\
+	b2a &把二进制float转成ascii\\	
+	ftnstrip & 把Fortran的float转成C格式的float\\	
+	h2b & convert 8 bit hexidecimal floats to binary\\	
+	recast & 改变数据类型(从一种数据类型转到另一种)\\	
+	transp & 转置一个n1×n2个元素的矩阵\\
+	\bottomrule
+\end{tabular} 
+
+\begin{enumerate}
+	\item[a2b和b2a] ASCII to Binary, Binary to ASCII\par
+	在所有的数据格式中，ASCII是最常传送的（也是最耗空间的）。不管你使用什么系统，都可能需要把ASCII转来或转去。而且，因为文本编辑器支持ASCII，因此经常可能要用文本编辑器来做数据输入或编辑。\par
+	这种格式大都是多行格式，用空格或tab来隔开。要转换一个例如5行的数据到二进制，键入：\par
+	\framebox[0.9\textwidth]{a2b < data.ascii n1=5 > data.binary\hfill}\par
+	相反的操作就是：\par
+	\framebox[0.9\textwidth]{b2a < data.binary n1=5 > data.ascii\hfill}\par
+	\item[ftnstrip] 把Fortran数据转换成C语言格式\par
+	Fortran在地震数据处理中是比较流行的语言，因此常常需要处理Fortran创建或处理过的数据。Fortan的二进制数据是被beginning-of-record和end-of-record分隔符隔开的。而C程序创建的二进制数据没有这些分隔符。要在C程序中使用Fortran数据需要去掉这些Fortran标签，通过：\par
+	\framebox[0.9\textwidth]{ftnstrip < fortdata > cdata\hfill}
+	\item[recast] 改变数据类型(从一种数据类型转到另一种)\par
+	float 浮点型, double 双精度, int （带符号）整型, char 字符, uchar 无符号字符, short 短整型, long 长整型, ulong 无符号长整型\par
+	例如，把整型转换成浮点型：\par
+	\framebox[0.9\textwidth]{recast < data.ints in=int out=float > data.floats\hfill}
+	\item[transp] 转置一个n1×n2个元素的矩阵
+	\item[farith] 对二进制数据作简单的算术运算\par
+	很多时候需要对文件做算术操作，或者在两个二进制数据文件之间。程序farith用来完成许多类似的任务.\par
+    \mvspace
+	Farith对单个文件的操作包括：\par
+	\rule{0.9\textwidth}{0.1em}\\
+	Scaling value（缩放数值）\par
+	Polarity reversal（极性反转）\par
+	Signum function（正负号函数）\par
+	absolute value （绝对值）\par
+	exponential（取指数）\par	
+	logarithm（取对数）\par	
+	square root （开平方根）\par
+	square（取平方）\par
+	inverse (punctuated), （取道数，带小数点）\par
+	inverse of square (punctuated), （取平方倒数，带小数点）\par
+	inverse of square root (punctuated) （取平方根倒数，带小数点）\par
+    \vspace{0.6cm}
+	二元操作(对两个文件的操作)包括\par
+	\rule{0.9\textwidth}{0.1em}\\
+	addition （加法）\par
+	subtraction  （减法）\par
+	multiplication （乘法）\par
+	division  （除法）\par
+	Cartesian product笛卡尔乘积：从给定的集合X和Y中构成的所有（x，y）元素对集合\par
+	\vspace{0.6cm}
+	地震操作包括\par
+	\rule{0.9\textwidth}{0.1em}\\
+	slowness perturbation\par
+	sloth perturbation\par
+	\vspace{0.4cm}
+	使用farith的实例：\par
+	\framebox[0.9\textwidth]{farith in=data.binary op=pinv out=data.out.bin\hfill}\par
+	\framebox[0.9\textwidth]{farith in=data1.binary in2=data2.binary op=add > data.out2.bin\hfill}
+\end{enumerate}                  
+                
+   
+                 
+   

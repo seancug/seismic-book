@@ -1,0 +1,159 @@
+\chapter{SU信号处理}
+\section{1D滤波操作}
+地震处理中很大一部分工作可以称为滤波。在SU中1D滤波应用程序可以进行简单的滤波操作，和更复杂的反褶积和子波整形处理。这些操作成为1D，是因为这些操作处理数据是一道一道进行的。\\
+SU包含的命令有：\\
+\begin{tabular}{ll}
+	\toprule
+	sufilter & 应用零相位正弦平方斜坡滤波\\	
+	subfilt & 应用Butterworth带通滤波	\\
+	suacor & 自相关	\\
+	suconv, suxcor & 利用用户提供的滤波器进行褶积和相关	\\
+	supef & Wiener预测误差滤波\\	
+	sushape & Wiener整形滤波\\	
+	suresamp & 时间域重采样	\\
+	sufrac & 采用一般的时间微分、积分、相位移动，注：时间域数据\\	
+	sumedian & 沿着用户确定的多边形曲线，根据道头字指定的与曲线的距离，进行中值滤波\\	
+	sutvband & 时变带通滤波（正弦平方滤波）\\
+	\bottomrule
+\end{tabular}
+
+\subsection{sufilter - 应用零相位正弦平方斜坡滤波}
+sufiletr提供了可用于一般的带通、带陷、低通、高通和陷波滤波，使用sufilter进行滤波的例子如下：
+\begin{lstlisting}
+suplane | sufilter f=10,20,30,60 amps=0,1,1,0 | suxwigb title="10,20,30,60 hz bandpass" 
+suplane | sufilter f=10,20,30,60 amps=1,0,0,1 | suxwigb title="10,20,30,60 hz bandreject" &
+suplane | sufilter f=10,20,30,60 amps=1,1,0,0 | suxwigb title="10,20 hz lowpass" &
+suplane | sufilter f=50,60,70 amps=1,0,1 | suxwigb title="60 hz notch" &
+\end{lstlisting}
+
+\subsection{subfilt - 应用Butterworth带通滤波 }
+subfilt与程序sufilter工程相似，它使用Butterworth滤波器进行滤波：
+\begin{lstlisting}
+suplane | subfilt fstoplo=10 fpasslo=20 fpasshi=30 fstophi=60 | suxwigb title="10,20,30,60 hz bandpass” 
+\end{lstlisting}
+
+\subsection{suconv, suxcor - 使用用户设计的滤波器进行褶积和相关}
+褶积和互相关可分别使用suconv和suxcor命令实现。滤波器可以通过在命令行输入向量、或者通过含有某个道的SU格式文件提供。\par
+下面是一个可控联系扫描信号进行相关处理的例子。通过联合使用suvibro、suplane和suconv，产生类似可控连续震动的数据。生成可控连续震动的命令如下：
+\begin{lstlisting}
+suvibro > junk.vib.su
+suplane | suconv sufile=junk.vib.su > plane.vib.su
+\end{lstlisting}
+使用surange命令查看junk.vib.su数据的信息：
+\begin{lstlisting}
+surange < junk.vib.su
+1 traces:
+tracl=1 ns=2500 dt=4000 sfs=10 sfe=60
+slen=10000 styp=1
+\end{lstlisting}
+显示可控震源扫描信号有2500个采样点，因此做下面所示的相关分析：
+\begin{lstlisting}
+suxcor < plane.vib.su sufile=junk.vib.su | suwind itmin=2500 itmax=2563 | sushw key=delrt a=0.0 > data.su
+\end{lstlisting}
+参数itmin=sweeplength和itmax=sweeplength+nsout，参数nsout是期望输出的采样点数，最后使用sushw设置道延迟为0。选择参数itmin=sweeplength将保证数据从正确的值起始。
+
+\subsection{supef - Wiener预测误差滤波}
+\subsection{sushape - Wiener整形滤波}
+
+\section{2D滤波操作}
+二维空间$(k1,k2)$和$(F,K)$域滤波有助于改变数据的倾角信息。下面的这些程序初步的提供了一套波数$(K)$域和频率-波数$(F，K)$域滤波操作命令：\par
+\begin{tabular}{lp{0.7\textwidth}}
+	\toprule
+	sukfilter & radially symmetric K-domain, $sin^2$-tapered, polygonal filter\\
+	suk1k2filter & symmetric box-like K-domain filter defined by the cartesian product of two $sin^2$-tapered polygonal filters defined in k1 and k2\\
+	sukfrac  & apply FRACtional powers of i-k to data, with phase shift\\
+	sudipfilt & DIP-or better-SLOPE Filter in f-k domain\\
+	\bottomrule
+\end{tabular}
+\section{Fourier变换}
+在SU软件包中有1D和2D Fourier变换程序。\par 
+2D变换包括地震$F-K$变换，假定输入数据的块空间是时间的，第二维是空间的。\par
+对非地震$K1-K2$变换，假定输入是纯二维空间$(x1, x2)$数据。
+\subsection{1D Fourier变换}
+\begin{tabular}{ll}
+	\toprule
+	sufft & 从实数时间道变换到复数频率道（正变换）\\
+	suifft & 从复数频率道变换到实数时间道（逆变换）\\	
+	suamp & 输出振幅、相位、实部和虚部（从frequency, x）\\	
+	suspecfx & 地震数据Fourier频谱分析（时间T到频率F）\\
+	\bottomrule
+\end{tabular}\\
+例如：
+\begin{lstlisting}
+suplane | suxwigb title="Original Data" 
+suplane | sufft | suifft | sushw key=d1,dt a=0,4000 | suxwigb
+\end{lstlisting}
+结果与输入完全一样，除了地震道结果中有更多的采样点，因为变换时要补零。\\
+要浏览sufft程序输出的振幅谱和相位谱、实部和虚部，操作如下：\\
+\begin{lstlisting}
+suplane | sufft | suamp mode=amp | suxwigb title="amplitude" 
+suplane | sufft | suamp mode=phase | suxwigb title="phases" 
+suplane | sufft | suamp mode=real | suxwigb title="real" 
+suplane | sufft | suamp mode=imag | suxwigb title="imaginary" 
+\end{lstlisting}
+SU数据格式可以存储复数数据的实部和虚部。键入下面的命令可以查看格式的道头设置位置：
+\begin{lstlisting}[frame=single]
+suplane | sufft | surange
+sufft: d1=3.571428
+32 traces:
+tracl=(1,32) tracr=(1,32) trid=11 offset=400 ns=72
+dt=4000 d1=3.571428
+\end{lstlisting}
+显示出道头字trid=11，显示出FFT变换输出数据是如何排列的.
+当然，绝大多数时候，我们只想快速看看一个地震道或一块地震数据的振幅谱，这时可以用suspecfx命令：
+\begin{lstlisting}
+suplane | suspecfx | suximage title="F-X Amplitude Spectrum" 
+\end{lstlisting}
+这将直接显示输入SU数据每道的振幅谱。
+
+\subsection{2D Fourier变换}
+如果数据实际上为（时间、空间）坐标数据，那么2D Fourier变换输出的就是F-K(频率、波数)域数据。如果考虑两个空间坐标（x1,x2）数据，进行2D Fourier变换，这时输出就是（k1,k2）2D波数域数据。\par\mvspace
+\begin{tabular}{ll}
+	\toprule
+	SUSPECFK & 数据的F-K域Fourier频谱分析\\
+	SUSPECK1K2 &  $(x1,x2)$数据2D$(K1-K2)$Fourier频谱分析\\
+	\bottomrule
+\end{tabular}\\\\
+例子：
+\begin{lstlisting}
+suplane | suspecfk | suximage title="F-K Amplitude Spectrum" 
+suplane | suspeck1k2 | suximage title="K1-K2 Amplitude Spectrum" 
+\end{lstlisting}
+
+\section{Hilbert变换、道属性和时间-频率域}
+\begin{tabular}{lp{0.7\textwidth}}
+	\toprule
+	suhilb & Hilbert变换\\
+	suattrbutes & 道属性（瞬时振幅、相位和频率）\\
+	sugabor & 通过Gabor变换（类似多参数滤波分析），输出地震数据时间-频率结果\\
+	\bottomrule
+\end{tabular}\\\\
+进行Hilbert变换的例子如下：
+\begin{lstlisting}
+suplane | suhilb | suxwigb title="Hilbert Transform"
+\end{lstlisting}
+查看suattributes命令生成道属性，将相应的显示出瞬时振幅、相位和频率：
+\begin{lstlisting}
+suvibro | suxgraph title="Vibroseis sweep" 
+suvibro | suattributes mode=amp | suxgraph title="Inst. amplitude" 
+suvibro | suattributes mode=phase unwrap=1.0 | suxgraph title="Inst. phase" 
+suvibro | suattributes mode=freq | suxgraph title="Inst. frequency" 
+\end{lstlisting}
+使用sugabor命令可以进行时间-频率域分析：
+\begin{lstlisting}
+suvibro | sugabor | suximage title="time frequency plot" 
+\end{lstlisting}
+
+\section{Radon变换  Tau\_P滤波}
+Radon变换或“Tau\_P”变换时压制多次波和进行数据改造的有效方法，涉及的程序有:\\
+\begin{tabular}{lp{0.7\textwidth}}
+	\toprule
+	sutaup & 正向和逆向（forwared and inverse）T-X和F-K全局倾斜叠加\\
+	suharlan & 信号噪声分离，应用Harlan可逆线性变换方法（1984）\\	
+	suradon & 计算正或逆Radon变换，或用抛物线Radon变换估计并去除多次波	\\
+	suinterp & 使用自动同相轴拾取方法进行道插值\\
+	\bottomrule
+\end{tabular}\\\\
+相关使用方法，请参阅：\$CWPROOT/src/demos/Tau\_P下的例子
+
+\section{suresamp - 数据时间域重采样}

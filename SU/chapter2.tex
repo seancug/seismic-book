@@ -1,0 +1,298 @@
+\chapter{SU数据常用操作}
+\section{编辑SU数据}
+一旦SU格式的数据读入和道头设置正确后，常常要对数据进行操作和编辑。SU提供的数据处理和编辑的命令有\ref{table:here}：\par\mvspace
+\begin{tabular}{lp{0.65\textwidth}}
+	\toprule
+	suwind & 根据关键字开时窗\\	
+	susort & 基于segy道头关键字进行道分选\\	
+	suramp & 从道起点到道终点进行线性斜坡化(Linearly taper)至零值\\	
+	sutaper & 对一个数据窗进行斜坡化(taper)至零值\\	
+	sunull & 产生空道（都为零值）\\	
+	suzero & 在一时间窗内数据充零\\	
+	sukill & 地震道充零\\	
+	sunute & 根据关键道头字确定的距曲线的距离，去除用户指定的多边形曲线上边或下边的值\\	
+	suvlength & 调整变长度地震道到相同长度地震道\\	
+	suvcat & 将一个数据附加到另一个数据（一道接一道进行）\\
+	\bottomrule
+	\label{table:here}
+\end{tabular}
+
+\begin{enumerate}
+	\item[suwind] 用关键字选定一定时窗地震道\\
+	非常常见的操作就是我们时常需要浏览或处理地震数据中的一小块数据。suwind命令使得我们可以根据大量的参数信息设置窗口来选定感兴趣的数据。\par\mvspace
+	\fbox{通过道头字来设定数据窗口的大小}\par
+	suwind最简单的用法就是，通过用户设定道头关键字的最小和最大值来选定数据：\\\\
+	\begin{tabular}{ll}
+		\toprule
+		key=tracl & 设置窗口的道头字(see segy.h)\\
+		min=LONG\_MIN &   数据关键道头字的最小值\\
+		max=LONG\_MAX &   数据关键道头字的最大值\\
+		\bottomrule
+	\end{tabular}\\\\
+	例如，用道数作关键字对命令suplane产生的数据进行窗口大小设置：
+\begin{lstlisting}[language=python] 
+suplane | suwind key=tracl min=5 max=10 | sugethw key=tracl | more
+\end{lstlisting}
+	对于一个大的数据体，应该使用计数（count）参数，而不是最大值。如果直接设定最大值（max），命令suwind将查询全部数据后，再选择在最小值和最大值之间的道集，这是因为程序认为道的标志（trace labeling）可能多次出现。例如，可以比较下面的两个命令的结果：\\
+\begin{lstlisting}[language=python] 
+suplane ntr=100000 | suwind key=tracl min=5 max=10 | sugethw tracl | more	
+suplane ntr=100000 | suwind key=tracl min=5 count=5 | sugethw tracl | more
+\end{lstlisting}	
+	更复杂的窗口大小选择如下(例如，使用分数，decimating data)：\par
+	\mvspace
+	\begin{tabular}{ll}
+		\toprule
+		j=1 & 通过每个j道…	\\
+		s=0 & 以s为基数(如果((key - s)\%j) == 0) \\
+		\bottomrule
+	\end{tabular}\par
+	\mvspace
+	下面的例子用suplane生成的数据，每两道抽取一道（即抽取道2、4、6…）：
+\begin{lstlisting}[language=python]
+suplane | suwind key=tracl j=2 | sugethw key=tracl | more
+\end{lstlisting}	
+	或者每隔2道抽取1道，基数为1（即抽取道1、3、5…）：
+\begin{lstlisting}[language=python]	
+suplane | suwind key=tracl j=2 s=1 | sugethw key=tracl | more
+\end{lstlisting}	
+	也可以用suwind接受或拒绝某些地震道：\par
+	\mvspace
+	\begin{tabular}{ll}
+		\toprule
+		reject=none  &   按指定的关键字跳过的地震道\\
+		accept=none   &   用指定的关键字选择地震道\\
+		\bottomrule
+	\end{tabular}\par
+	\mvspace
+	例如下面的命令所示，地震道中的第3、8、9道将不显示：
+\begin{lstlisting}[language=python]		
+suplane | suwind key=tracl reject=3,8,9 | sugethw key=tracl | more
+\end{lstlisting}	
+	参数accept选项有点特殊，它表示接收这些道，即使这些道被拒绝过。例如：
+\begin{lstlisting}[language=python]	
+suplane | suwind key=tracl reject=3,8,9 accept=8 | sugethw key=tracl | more
+\end{lstlisting}	
+	如果你只想接收列表中的道，这时需要设置参数“max=0”,下列所示只显示出第8道:
+\begin{lstlisting}[language=python]	
+suplane | suwind key=tracl accept=8 max=0 | sugethw key=tracl | more
+\end{lstlisting}	
+	计数（count）参数覆盖接收（accept）参数，所以如果你想真正无条件接受道，就不能指定计数(count)参数。\par
+	\mvspace
+	\fbox{选取时间窗口（Time gating）}\\
+	有关窗口的第二个问题就是时间窗的设定。垂直时间窗（time gating）的选项为：\\
+	\begin{tabular}{ll}
+		\toprule
+		tmin = 0.0 & 选取最小时间	\\
+		tmax = (from header) &  选取最大时间	\\
+		itmin = 0 & 选取最小时间采样\\	
+		itmax = (from header) & 选取最大时间采样\\	
+		nt = itmax-itmin+1 & 时间采样点数	\\
+		\bottomrule
+	\end{tabular}\par
+	\mvspace
+	设置的结果要么是选取最小时间采样和选取最大时间采样（itmin和itmax），要么选取最小时间和选取最大时间（tmin和tmax），这样就将产生一个最接近采样的时窗。
+	\item[susort] 根据segy道头字分选道\\
+	susort命令利用Unix系统sort命令，通过道头关键字对地震道进行分选。\\
+	例如，根据两个关键字(cdp和offset)分选数据（数值按升序），可用下面的命令：
+\begin{lstlisting}[language=python]	
+susort <indata.su >outdata.su cdp offset
+\end{lstlisting}
+	如果offset关键字按降序，cdp关键字按升序进行分选，可用下面的命令：
+\begin{lstlisting}
+susort <indata.su >outdata.su cdp -offset
+\end{lstlisting}
+	
+	\item[suramp和sutaper] 数据斜坡化（Tapering）
+	很多地震处理算法因为数据的突变边界而显示假象，在数据边界对振幅进行斜坡化(tapering)，就是压制这种假象的最容易的方法。在SU中，我们可以使用sutaper命令对数据边界进行斜坡化。\\
+	例如，对每5道数据从头到尾进行斜坡化：
+\begin{lstlisting}
+sutaper <diskfile >stdout ntaper=5
+\end{lstlisting}
+	suramp可以平滑从起始道和(或)末道。例如，斜坡化从0到tmin=0.05s,然后再向下从tmax=1.15s到末道：
+\begin{lstlisting}
+suramp <diskfile tmin=.05 tmax=1.15 >stdout
+\end{lstlisting}
+	\end{enumerate}\par
+	sukill、suzero、sunull和sumute– 数据充零\par
+	对有噪声的道、位于数据边界的道进行充零是有益的。或者是产生一些空道，在绘图时最为联系数据集中间的分割标志。
+
+\begin{enumerate}
+	\item[sukill] 道充零
+\begin{lstlisting}
+sukill <stdin >stdout min=MIN_TRACE count=COUNT
+\end{lstlisting}
+	这里参数count是要充零的总道数，参数min是要充零的这些道中的最小道号。
+	\item[sunull] 产生空道数据\\
+	有时需要生成道值为零的地震数据块。下面的命令产生共有NTR道，时间采样数为NT的地震数据：
+\begin{lstlisting}
+sunull nt=NT ntr=NTR <stdin >stdout min=MIN_TRACE count=COUNT
+\end{lstlisting}	
+	\item[suzero] 在一段时间窗内对数据充零
+\begin{lstlisting}
+suzero itmin=MIN_TIME_SAMPLE itmax=MAX_TIME_SAMPLE <indata.su > outdata.su
+\end{lstlisting}
+	\item[sumute] 数据去除	
+	要进行高精度的压制操作，可用命令sumute对SU数据进行处理。
+\begin{lstlisting}
+sumute <indata.su >outdata.su key=KEYWORD xmute=x1,x2,x3,...tmute=t1,t2,t3,...
+\end{lstlisting}
+	下面用suplane生成数据，然后做去除处理与原始生成数据比较：
+\begin{lstlisting}
+suplane | suxwigb 
+suplane | sumute key=tracl xmute=1,10,12 tmute=.06,.1,.11 | suxwigb 
+\end{lstlisting}
+	去除根据xmute=和tmute=参数确定的多边形曲线内每一个初至。
+	\item[suvcat和cat] 数据合并\\
+	有两种方法可以将一种数据附加到另一个上（合并）。第一种使用Unix命令cat，简单的将第二个文件的数据放到第一个文件中去。
+\begin{lstlisting}
+cat data1.su data2.su > data3.su
+\end{lstlisting}	
+	另外，可能需要对地震道重编号：
+\begin{lstlisting}
+cat data1.su data2.su | sushw key=tracl a=1 > data3.su
+\end{lstlisting}	
+	第二种是将第二个数据集中的每一道垂直的附加到第一个数据集中每一道的末尾。这就需要使用suvcat命令：
+\begin{lstlisting}
+suvcat data1.su data2.su > data3.su
+\end{lstlisting}
+	在这个例子中，就不需要修改道头字。
+	\item[suvlength] 调整可变长度道到相同采样点数	\\
+	有时数据中每道含有不同的采样点数。下面我们对用suplane命令生成的数据，用命令suvlength处理的道相同的采样点数：
+\begin{lstlisting}
+suplane nt=64 > data1.su
+suplane nt=32 > data2.su	
+cat data1.su data2.su > data3.su
+\end{lstlisting}
+	对于上面合并生成的数据data3.su，如果想用SU程序处理该数据文件将会失败，因为大多说SU程序要求数据块含有相同的采样点数。使用命令suvlength可以解决该问题：
+\begin{lstlisting}
+suvlength ns=64 < data3.su > data4.su
+suxwigb < data4.su title="Test of suvlength" 
+\end{lstlisting}	
+	这将使所有的道含有相同的长度。
+\end{enumerate}
+
+\section{SU数据常用操作}
+\begin{tabular}{ll}
+	\toprule
+	suaddnoise – 对地震道加噪声\\
+	sugain – su数据增益\\
+	suop – su数据的一元操作\\
+	suop2 – su数据的二元操作\\
+	\bottomrule
+\end{tabular}
+\begin{enumerate}
+	\item[suaddnoise] 对地震道加噪声\\	
+	下面是两个使用suaddnoise命令的例子：
+\begin{lstlisting}
+suplane | suxwigb title="no noise" 
+suplane | suaddnoise | suxwigb title="noise added" 
+suplane | suaddnoise sn=2 | suxwigb title="noise added" 
+\end{lstlisting}
+	\item[sugain] su数据增益
+	增益命令含有多个选项：\par\vspace{0.1em}
+	\begin{tabular}{p{0.42\textwidth}p{0.42\textwidth}}
+	\toprule
+	scaling the data & 数据比例伸缩\\
+	multiplying the data by a power of time & 数据与时间幂相乘\\
+	taking the power of the data & 数据取幂\\
+	automatic gain control & 自动增益控制\\
+	trapping noise spiked traces & 含噪声脉冲的地震道陷波滤波\\
+	clipping specified amplitudes or quantiles & 指定的振幅或分量裁减限制\\
+	balancing traces by quantile clip, rms value, or mean &根据等分法、均方根值或均值道均衡\\
+	biasing or debiasing the data & 偏离或去偏离数据 \\
+	\bottomrule
+	\end{tabular}\par\mvspace
+	操作优先等级如下面的方程所示：
+	$$out(t) = scale*bal\left\lbrace clip\left[ agc\left\lbrace \left[ t^{tpow}*e^{epow*t}*\left( in(t)-bias\right) \right] ^{gpow}\right\rbrace \right] \right\rbrace ）$$
+	实例：
+\begin{lstlisting}
+suplane | suaddnoise > data.su
+suxwigb < data.su title="Ungained Data" 	
+sugain < data.su scale=5.0 | suxwigb title="Scaled data" 	
+sugain < data.su agc=1 wagc=.01 | suxwigb title="AGC=1 WAGC=.01 sec 	
+sugain < data.su agc=1 wagc=.2 | suxwigb title="AGC=1 WAGC=.1 sec 	
+sugain < data.su pbal=1 | suxwigb title="traces balanced by rms" 
+sugain < data.su qbal=1 | suxwigb title="traces balanced by quantile" 	
+sugain < data.su mbal=1 | suxwigb title="traces balanced by mean" 	
+sugain < data.su tpow=2 | suxwigb title="t squared factor applied" 	
+sugain < data.su tpow=.5 | suxwigb title="square root t factor applied" 
+\end{lstlisting}
+	\item[suop] su数据的一元操作\\ 
+	suop对SU数据进行一元函数运算和操作，主要功能包括：\par
+	\begin{tabular}{p{0.45\textwidth}l}
+		\toprule
+			absolute value & 取绝对值	\\		
+			signed square root & 带符号开方\\		
+			square & 平方	\\		
+			signed square & 带符号位平方\\			
+			signum function & 正负号函数	\\		
+			exponential & 指数\\			
+			natural logarithm & 取自然对数\\			
+			signed common logarithm & 带符号位常用对数	\\		
+			cosine & 余弦函数\\			
+			sine & 正弦函数	\\		
+			tangent &  正切函数	\\		
+			hyperbolic cosine &  双曲余弦函数	\\		
+			hyperbolic sine & 双曲正弦函数\\			
+			hyperbolic tangent & 双曲正切函数	\\		
+			divide trace by Max. Value & 地震道数据用最大值除	\\		
+			express trace values in decibels: 20 * slog10 (data) & 地震道数据用分贝表示\\			
+			negate values & 数据取反\\			
+			pass only positive values & 只选正值\\			
+			pass only negative values & 只选负值\\
+			\bottomrule
+	\end{tabular}\\\\
+	例子：
+\begin{lstlisting}
+suplane | suaddnoise > data.su
+suop < data.su op=abs | suxwigb title="absolute value" 	
+suop < data.su op=ssqrt | suxwigb title="signed square root" 	
+suop < data.su op=sqr | suxwigb title="signed square" 	
+\end{lstlisting}
+	
+	\item[suop2] su数据的二元操作
+	程序suop2用来对两个SU数据进行操作，该命令支持的计算有：\par
+	\begin{tabular}{p{0.45\textwidth}l}
+		\toprule
+		difference &  相减\\
+		sum & 相加\\	
+		product & 相乘\\	
+		quotient & 相除\\
+		\bottomrule
+	\end{tabular}\\\\
+	前面的选项假定每个SU数据道采样数相同，后面4个选项假定第二个文件只有一道。\par
+	\begin{tabular}{p{0.45\textwidth}l}
+		\toprule
+		difference of a panel and a single trace & 一块数据和某一道数据相减\\
+		sum of a panel and a single trace & 一块数据和某一道数据相加\\
+		product of a panel and a single trace & 一块数据和某一道数据相乘\\
+		quotient of a panel and a single trace & 一块数据和某一道数据相除\\
+		\bottomrule
+	\end{tabular}\\\\
+	并且有8个对等shell文本命令做这些操作：\\
+	\begin{tabular}{ll}
+		\toprule
+		susum file1 file2 & suop2 file1 file2 op=sum\\
+		sudiff file1 file2 & suop2 file1 file2 op=diff\\	
+		suprod file1 file2 & suop2 file1 file2 op=prod\\	
+		suquo file1 file2 & suop2 file1 file2 op=quo\\
+		\bottomrule
+		\multicolumn{2}{c}{For: panel "op" trace operations:}\\
+		\toprule
+		suptsum file1 file2 & suop2 file1 file2 op=ptsum\\
+		suptdiff file1 file2 & suop2 file1 file2 op=ptdiff\\	
+		suptprod file1 file2 & suop2 file1 file2 op=ptprod	\\
+		suptquo file1 file2 & suop2 file1 file2 op=ptquo\\
+		\bottomrule
+	\end{tabular}\\\\
+	所有这些操作都是调用suop2进行计算。\\
+	例子：
+\begin{lstlisting}
+suplane > junk1.su
+suxwigb < junk1.su | suxwigb title="Data without noise" 	
+suplane | suaddnoise > junk2.su	
+suxwigb < junk2.su | suxwigb title="Data with noise added" 	
+suop2 junk2.su junk1.su op=diff | suxwigb title="difference" 
+\end{lstlisting}
+	注意，文件名应出现在操作参数”op=”之前。
+\end{enumerate}

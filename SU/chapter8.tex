@@ -1,0 +1,122 @@
+\chapter{实际地震资料处理}
+
+\section{道充零 sukill} 
+\begin{lstlisting}
+sukill < $indata min=61 count=2
+\end{lstlisting}
+道充零没有关键字，通过数道得到他们。
+
+\section{f-x显示}
+suspecf制作fx频谱图，suop op=norm归一化操作
+\begin{lstlisting}
+# Create frequency spectrum of each trace and normalize
+suspecfx < $indata | suop op=norm |
+# Plot frequency traces
+suximage xbox=10 ybox=10 wbox=400 hbox=600 label1=" Freq (Hz)" windowtitle="f-x spectrum" title=$indata cmap=hsv7 legend=1 unit=Amplitude verbose=0 bclip=0.5 wclip=0.0 
+\end{lstlisting}
+交互脚本见附件fxdisp.sh
+
+\section{滤波、重采样抽道集}
+滤波sufilter例子：
+\begin{lstlisting}
+#Examples of filters:							
+Bandpass:   sufilter <data f=10,20,40,50 | ...			
+Bandreject: sufilter <data f=10,20,30,40 amps=1.,0.,0.,1. | ..	
+Lowpass:    sufilter <data f=10,20,40,50 amps=1.,1.,0.,0. | ...	
+Highpass:   sufilter <data f=10,20,40,50 amps=0.,0.,1.,1. | ...	
+Notch:      sufilter <data f=10,12.5,35,50,60 amps=1.,.5,0.,.5,1. |..	
+
+sufilter < $indata f=16,21,85,95 amps=0,1,1,0 | 
+suresamp nt=2750 dt=.004 | susort > $outdata cdp offset
+\end{lstlisting}
+
+\section{球面补偿}
+球面补偿简单的应用，已分贝形式查看比较补偿前后的变化。：
+\begin{lstlisting}
+sugain < indata.su tpow=2 > outdata.su
+suwind < $indata key=$mykey min=$mykey1 max=$mykey2 | suattributes mode=amp | suop op=db > tmp0
+\end{lstlisting}
+\par
+理论上球面扩散是1/(距离)的平方，但实际上不是需要进行不同的尝试。\par
+交互界面能量补偿见igain.sh。\par
+
+\section{单道处理与多道处理区别}
+单道处理不用考虑临近道的关系，例如在炮集中和cmp道集中进行处理结果都是一样的。\par
+多道处理则是必须考虑道临近道之间的关系。\par
+\begin{tabular}{ll}
+\toprule
+Single-trace & Multi-trace\\
+\midrule
+sugain – gain & sunmo – NMO\\
+sufilter – 1-D filter & sukill – kill trace\\
+suvelan – semblance & sudipfilt – 2-D filter\\
+supef – deconvolution & sustolt – Stolt migration\\
+\bottomrule
+\end{tabular}\par
+
+\section{F-K滤波}
+$F-K$滤波通过sudipfilt来实现，$F-K$滤波的斜率可以用相对单位（seconds/meter）或者是绝对单位（number of samples）\par
+\begin{tabular}{|lll|}
+	\toprule
+ a pass filter &  slopes=s1,s2,s3,s4  &  amps=0,1,1,0\\
+
+a reject filter  &  slopes=s1,s2,s3,s4  &  amps=1,0,0,1\\
+\bottomrule
+\end{tabular}\par\mvspace\mvspace
+suspecfk查看分析地震数据的频谱：
+\begin{lstlisting}
+suspecfk < indata.su dx=$dx dt=$dt | suximage xbox=320 ybox=10 wbox=300 hbox=500 \
+label1=" Frequency (Hz)" label2="Wavenumber (k)" title="f-k spectrum, no filter"  cmap=hsv2 legend=1 units=Amplitude verbose=0 grid1=dots grid2=dots perc=99 &
+\end{lstlisting}
+indata.su为需要进行f-k变化的一炮地震数据
+\begin{lstlisting}
+#通过的数据
+sudipfilt < tmp1 dx=$dx dt=$dt slopes=$slopes amps=0,1,1,0 > tmp2
+# Plot f-k passed data
+suspecfk < tmp2 dx=$dx dt=$dt | 
+suximage xbox=320 ybox=10 wbox=300 hbox=500 label1=" Frequency (Hz)" label2="Wavenumber (k)" title="f-k Spectrum after PASS filter" cmap=hsv2 legend=1 units=Amplitude verbose=0 grid1=dots grid2=dots perc=99 &
+# Apply reject filter
+sudipfilt < tmp1 dx=$dx dt=$dt slopes=$slopes amps=1,0,0,1 > tmp3
+# Plot f-k rejected data
+suspecfk < tmp3 dx=$dx dt=$dt |
+suximage
+xbox=940 ybox=10 wbox=300 hbox=500 label1=" Frequency (Hz)" label2="Wavenumber (k)" title="f-k Spectrum after REJECT filter" cmap=hsv2 legend=1 units=Amplitude verbose=0 grid1=dots grid2=dots perc=99 &
+\end{lstlisting}
+
+\section{反褶积}
+反褶通过压缩子波波形来提高提高时间分辨率。\par
+supef (Wiener predictive error filtering)反褶积两个重要的参数是 minlag (seconds)[prediction length] 和 maxlag (seconds)[ operator length]. 
+supef parameter pnoise： the percent white noise 白噪音\par
+Operator length 一定要大于 prediction length.\par
+另个程序suacor画的是每一道的自相关，用来分析反褶积的一个重要工具\par
+supef有关于自相关窗口大小的参数设置，而suacor没有自相关窗口参数。\par
+
+\subsection{反褶积前先进行自相关，跟反褶积之后的结果进行对比}
+\begin{lstlisting}
+#时间截断
+suwind < tmp1 tmin=$taa tmax=$tzz > tmp2
+#自相关
+suacor < tmp2 ntout=101 sym=0 |
+suxwigb perc=$myperc xbox=322 ybox=10 wbox=300 hbox=500 label1=" Time (s)" label2=$mykey key=$mykey windowtitle="Acor before decon" title="Autocorrelation" wclip=0 verbose=0 &
+\end{lstlisting}
+
+\subsection{反褶积}
+\begin{lstlisting}
+# Deconvolution
+supef < tmp1 minlag=$minlag maxlag=$maxlag mincorr=$taa maxcorr=$tzz pnoise=$wnoise > tmp3
+\end{lstlisting}
+
+\subsection{反褶积之后自相关}
+\begin{lstlisting}
+suwind < tmp3 tmin=$taa tmax=$tzz > tmp4
+suacor <tmp4 ntout=101 sym=0 |
+suxwigb perc=$myperc xbox=946 ybox=10 wbox=300 hbox=500 label1=" Time (s)" label2=$mykey key=$mykey title="Acor: first time = $taa, last time = $tzz"  windowtitle="Acor after decon" verbose=0 &
+\end{lstlisting}
+
+\subsection{先增益还是先滤波}
+\begin{lstlisting}
+sudiff T5kgf820.su T5kfg820.su > Tdiff820.su
+sudiff T5kgf930.su T5kfg930.su > Tdiff930.su
+\end{lstlisting}
+不知道哪一个更好，需要进行比较，看实际情况而定
+

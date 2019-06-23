@@ -1,0 +1,48 @@
+\documentclass[a4paper]{ctexbook}
+
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{CJK}
+\usepackage[CJKbookmarks]{hyperref}  
+\usepackage{listings} 
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+
+\hypersetup{%
+	pdfstartview={FitH},% 文档初始视图为匹配宽度
+	bookmarksnumbered={true},% 书签附上章节编号
+	bookmarksopen={true},% 展开书签
+	pdfborder=000,% 链接无框
+	citecolor=blue,
+	linkcolor=blue, % blue
+	anchorcolor=blue,
+	urlcolor=blue
+}
+\lstset{numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt,firstnumber=1,frame=shadowbox,columns=flexible,breaklines=true,language=csh}
+
+\newcommand{\mvspace}{\vspace{0.5em}}
+\newcommand{\inspace}{\hspace{2.5mm}}
+
+\title{地震处理笔记 (SU和Madagascar)}
+\author{孙波<seancug@cug.edu.cn>}
+\date{created: 2017-06-11 \\ last updated: \today}
+
+
+\begin{document}
+	\maketitle
+	\include{preface}
+	\tableofcontents
+	
+	\part{Seismic Unix}
+	\include{SU/chapter1}
+	\include{SU/chapter2}
+	\include{SU/chapter3}
+	\include{SU/chapter4}
+	\include{SU/chapter5}
+	\include{SU/chapter6}
+	\include{SU/chapter7}
+	\include{SU/chapter8}
+	\part{Madagascar}
+	
+\end{document}

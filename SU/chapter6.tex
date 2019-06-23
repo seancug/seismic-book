@@ -1,0 +1,118 @@
+\chapter{demos - 演示实例}
+目录\$CWPROOT/src/demos中有多个子目录，用于运行Shell脚本来演示SU命令的使用。
+\begin{enumerate}
+	\item /3D\_Data\_Viewing 三维数据的显示
+	\item /3D\_Model\_Building 构建3D模型\\
+	- Tetramod:建立地震波速度模型编码演示程序“tetra”.	
+	\item  /Amplitude\_Correction : 振幅修正\\
+	- sudipdivcor: performs the conventional and dip-dependent divergence corrections
+	- sudivcor: performs the conventional divergence corrections.
+	\item  /BC\_Examples：BC例子
+	\item  /Block：免费软件包uncert中的”block”程序演示
+	\item  /Datuming：基准面例子\\	
+	- Finite\_Difference: 传统的有限差分基准面\\
+	- Kirchhoff\_Datuming: Kirchhoff基准面.
+	\item  /Deconvolution：反褶积演示\\
+	- FX: 频率波数域滤波\\
+	- Wiener\_Levinson: 预测误差滤波.
+	\item  Dip\_Moveout：倾角校正\\
+	- Converted\_Wave: performs  Converted Wave Dip Moveout ondata sorted in to CDP gathers\\
+	- Fti\_Media: 预测误差滤波\\
+	- Ti\_Media: 横向均匀介质倾角校正
+	\item  Filtering：滤波演示\\
+	- Subfilt: Butterworth滤波\\
+	- Sudipfilt: 倾角滤波\\
+	- Sufilter: 多边形零相位频率滤波\\
+	- Sugabor: gabor变换频率-时间滤波\\
+	- Suk1k2filter: 波数滤波（箱形，box）\\
+	- Sukfilter: 波数滤波（环形，annular）\\
+	- sumedian: 中值滤波
+	\item  Header\_Remapping：观测系统坐标转换
+	\item  Kaperture
+	\item  Making\_Data：生成合成地震记录\\
+	- CommonOffset: 共偏移距和零偏移距道集\\
+	- ShotGathers: 共炮点道集
+	\item Migration\_Inversion：偏移（反演）\\
+	- Post\_stack: 叠后偏移演示\\
+	- Pre\_stack: 叠前偏移演示\\
+	- Slant\_Stack: slant stack 偏移演示
+	\item Muting：切除演示
+	\item NMO：传统正常时差校正和叠加演示
+	\item Noise：加噪音演示
+	\item Offset\_Continuation：小偏移距共偏移距延拓
+	\item Picking：道拾取\\
+	- Supickamp: 自动拾取
+	\item Plotting：绘图演示
+	\item Ray\_Tracing：射线追踪\\
+	- Rayt2d: \\
+	- Wkbj: 逆风有限差分法求解程函方程
+	\item Reading\_Data：segd数据的读取\\
+	- segdread: 
+	\item Reflection\_Coefficients：反射系数\\
+	- Linrort: \\
+	- Refaniso: 
+	\item Refraction：折射波应用\\
+	- GRM:单层广义互逆法（Generalized Reciprocal Method for a single layer）
+	\item Selecting\_Traces：用道头抽道做特殊处理
+	\item Sorting\_Traces：用susort命令做道分选\\
+	- Demo: \\
+	- Susorty: \\
+	- Tutorial: 
+	\item Stacking\_Traces：道集叠加\\
+	- Diversity\_Stacking: \\
+	- Phase\_Weighted\_Stacking: 
+	\item Statics：静校正\\
+	- Residual\_Refraction\_Statics:\\ 
+	- Residual\_Statics: 
+	\item SUManual：SU用户手册中Shell脚本绘图命令\\
+	- plotting: 绘图演示
+	\item Synthetic：制作合成记录\\
+	- Finite Difference: 有限差分2D模拟\\
+	- From\_Well\_Logs：	\\
+	- Impulse: 脉冲子波	\\
+	- Kirchhoff: Kirchhoff模拟\\	
+	- Reectivity: 发射模拟	\\
+	- Suaddevent：make null traces with sunull, add linear moveout arrivals with suaddevent	\\
+	- Suwaveform：wavelet generation with SUWAVEFORM	\\
+	- Tetra: 四面形模拟\\
+	- Tri: 三角形模拟	\\
+	- Trielas：2D raytracing program for transversely isotropic media with in-plane rotated axis of symmetry	\\
+	- CSHOT: 查看 \$CWPROOT/src/Fortran/CSHOT
+	\item Tau\_P：Tau\_P或倾斜叠加滤波\\
+	- Suharlan: Bill Harlan倾斜叠加噪声压制算法\\
+	- Suradon: \\
+	- Sutaup: 传统的Tau\_P变换
+	\item Three\_Component\_Traces：三分量道集\\
+	- Alford\_Rotation: \\
+	- Polarization\_Analysis: 
+	\item Time\_Freq\_Analysis：时间-频率域分析
+	\item Trace\_Headers\_and\_Values\\
+	- Suascii: \\
+	- Sucountkey: \\
+	- Sudumptrace: \\
+	- Sukeycount: 
+	\item Utilities：其它工具\\
+	- Sucommand: 
+	\item Velocity\_Analysis：基于NMO速度分析\\
+	- Residual\_Moveout\_Analysis: \\
+	- Ti\_Media: \\
+	- Traditional: 	\\
+	- Velancc: 
+	\item Velocity\_Profiles：制作速度剖面\\
+	- Makevel: \\
+	- Marmousi: \\
+	- Unif2: \\
+	- Unisam2: \\
+	- Vel2stiff: \\
+	- Velconv: 
+	\item Vibroseis\_Sweeps：用suvibro程序生成可控震源扫描输出道
+	\item Wavelet\_Transforms\\
+	- Mrafxzwt: Multi-Resolution Analysis (MRA) of a function F(X,Z) by Wavelet Transform
+	\item Well\_Log：测井数据
+	- Las2su: convert a LAS file to SU format
+	\item 建议新手按下面的顺序进行演示学习：
+	Making\_Data目录中含有用susynlv程序制作合成记录跑集和共偏移道集的演示流程。尤其是要注意演示中好的显示标注。\par
+	Filtering目录中包含一些实际数据处理中消除地滚波和初至的演示程序。\par
+	Deconvolution目录中演示了使用supef和其他工具简单合成脉冲道集，来举例说明去混响和脉冲反褶积处理。演示程序中包含使用loops系统检验滤波参数影响的命令。\par
+	Sorting\_Traces是一个交互的脚本，加强了文献中讨论的一些Unix和SU基本知识。
+\end{enumerate}

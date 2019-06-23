@@ -1,0 +1,159 @@
+\chapter{SU数据绘图及显示}
+Seismic Unix软件包包括一部分（普通C语言类型的浮点格式和SU格式）数据绘图的图形工具，均可在X-Windows环境下，在屏幕上显示或生成PostScript格式的图形文件。SU中能够绘制的图形类型有：\\
+\begin{tabular}{ll}
+	\toprule
+	contour plots & 等值线绘图\\	
+	gray or colorscale image plots & 灰度或彩色图像\\	
+	wiggle trace plots & 地震道波形图	\\
+	line or symbol graphs & 测线和符号绘图\\
+	movies & 电影动画\\
+	3D cube plots (PostScript only) & 3D立体图\\
+	\bottomrule
+\end{tabular}
+
+\section{X-Windows中绘制一般浮点型数据}
+在X-Windows环境下，用于绘制浮点型数据（没有SU道头）的程序有：\\
+\begin{tabular}{ll}
+	\toprule
+	xcontour & 调用矢量绘图来绘制$f(x1,x2)$的等值线图\\
+	ximage & 绘制灰度或彩色图像\\
+	xwigb & 绘制变面积地震道波形图\\
+	xgraph & 绘制曲线\\
+	xmovie & 绘制动画电影\\
+	\bottomrule
+\end{tabular}\\\\
+例子：
+\begin{lstlisting}
+suplane | sustrip > data.bin
+xcontour < data.bin n1=64 n2=32 title="contour" 
+ximage < data.bin n1=64 n2=32 title="image" 
+xwigb < data.bin n1=64 n2=32 title="wiggle trace" 
+xmovie < data.bin n1=64 n2=32 title="movie"
+xgraph < data.bin n=5 
+\end{lstlisting}
+上面命令中$n1=64,n2=32$表示数据大小为：$64*32$。\\
+完成上述操作后，要消去窗口，可以点击窗口然后键入“q”即可退出。
+
+\section{X-Windows中SU格式数据绘图}
+相应，在X-Windows环境下，用于绘制SU格式数据的程序有：\\
+\begin{tabular}{ll}
+	\toprule
+	suxcontour & 调用矢量绘图来绘制f(x1,x2)的等值线图\\
+	suximage & 绘制灰度或彩色图像\\
+	suxwigb & 绘制变面积地震道波形图\\
+	suxgraph & 绘制曲线\\
+	suxmovie & 绘制动画电影\\
+	suxmax & SU数据每道最大值、最小值和最大绝对值X-Windwos图\\
+	\bottomrule
+\end{tabular}\\\\
+例子：
+\begin{lstlisting}
+suplane | suxcontour title="contour" 
+suplane | suximage title="image" 
+suplane | suxwigb title="wiggle trace" 
+suplane | suxgraph title="graph" 
+suplane | suxmovie title="movie" 
+suplane | suxmax title="max" 
+\end{lstlisting}
+绘制地震道时，使用真偏移距，需要使用“key=”关键字参数。例如：
+\begin{lstlisting}
+suplane | suchw key1=offset key2=tracl a=0 b=100 | suxwigb key=offset
+\end{lstlisting}
+用suxmovie命令制作电影动画：
+\begin{lstlisting}
+suplane > junk1.su
+suplane | suaddnoise sn=20 >> junk1.su
+suplane | suaddnoise sn=15 >> junk1.su
+suplane | suaddnoise sn=10 >> junk1.su
+suplane | suaddnoise sn=5 >> junk1.su
+suplane | suaddnoise sn=3 >> junk1.su
+suplane | suaddnoise sn=2 >> junk1.su
+suplane | suaddnoise sn=1 >> junk1.su
+suxmovie < junk1.su n2=32 title="frame=%g" loop=1 
+\end{lstlisting}
+这里参数n2=32表示数据每幅有32道。“\%g”用来在图形标题上显示出图形的桢数，参数“loop=1”表示用连续循环方式运行电影。\par
+要加快或减慢电影的放映速度，只需要在图形的右下角点击并拖动窗口来放大或缩小图像。按在鼠标最右边的键一次将暂停，按第二次将重新放映。
+
+\section{一般浮点型数据的PostScript绘图}
+可用于一般浮点型数据的PostScript绘图的命令有：\\
+\begin{tabular}{lp{0.8\textwidth}}
+	\toprule
+pscontour & PostScript CONTOURing of a two-dimensional function$f(x1,x2)$\\
+psimage & PostScript IMAGE plot of a uniformly-sampled function $f(x1,x2)$\\
+pscube & PostScript image plot of a data CUBE\\
+psgraph & PostScript GRAPHer Graphs $n[i]$ pairs of $(x,y)$ coordinates\\
+psmovie & PostScript MOVIE plot of a uniformly-sampled function $f(x1,x2,x3)$\\
+pswigb & PostScript WIGgle-trace plot of $f(x1,x2)$ via Bitmap, 用位图绘制地震道\\
+pswigp & PSWIGP - PostScript WIGgle-trace plot of $f(x1,x2)$ via Polygons. 用多边形绘制地震道\\
+\bottomrule
+\end{tabular}\\\\
+例子：
+\begin{lstlisting}
+suplane | sustrip > data.bin
+pscontour < data.bin n1=64 n2=32 title="contour" > data1.eps
+psimage < data.bin n1=64 n2=32 title="image" > data2.eps
+pscube < data.bin n1=64 n2=32 title="cube plot" > data4.eps
+pswigb < data.bin n1=64 n2=32 title="bitmap wiggle trace" > data3.eps
+pswigp < data.bin n1=64 n2=32 title="wiggle trace" > data4.eps
+psmovie < data.bin n1=64 n2=32 title="movie" > data5.eps
+
+a2b < data.ascii n1=2 > data.bin
+n=5
+
+psgraph < data.bin n=5 > data6.eps
+\end{lstlisting}
+
+\section{SU数据的PostScript绘图}
+相应，可用于SU数据的PostScript绘图命令有：\par
+\begin{tabular}{lp{0.7\textwidth}}
+	\toprule
+	supscontour & PostScript CONTOUR plot of an SU data set\\
+	supsimage & PostScript IMAGE plot of an SU data set\\
+	supscube & PostScript CUBE plot of an SU data set\\
+	supsgraph & PostScript GRAPH plot of an SU data set\\
+	supswigb & PostScript Bit-mapped WIGgle plot of an SU data set\\
+	supswigp & PostScript Polygon-filled WIGgle plot of an SU data set\\
+	supsmax & PostScript of the MAX, min, or absolute max value on each trace of a SU data set\\
+	\bottomrule
+\end{tabular}\\\\
+例子：
+\begin{lstlisting}
+suplane > junk.su 
+supscontour < junk.su title="contour" > data1.eps
+supsimage < junk.su title="image" label1="sec" label2="trace number" > data2.eps
+supscube < junk.su title="cube plot" > data4.eps
+supswigb < junk.su title="bitmap wiggle trace" > data3.eps
+supswigp < junk.su title="wiggle trace" > data4.eps
+supsmovie < junk.su title="movie" > data5.eps
+supsmax < junk.su title="max" > data5.eps
+\end{lstlisting}
+
+\section{其它PostScript绘图工具}
+\begin{tabular}{lp{0.7\textwidth}}
+	\toprule
+	psbbox & change BoundingBOX of existing PostScript file 改变PostScript文件四周的框架\\
+	psmerge & MERGE PostScript files 合并PostScript文件\\
+	merge2 & MERGE2 PostScript figures onto one page 合并两幅图像\\
+	merge4 & MERGE4 figures onto one page 合并四幅图像\\
+	pslabel & output PostScript file consisting of a single TEXT string on a specified background.(Use with psmerge to label plots.) \\
+	psmanager & printer MANAGER for HP 4MV and HP 5Si Mx Laserjet PostScript printing\\
+	psepsi & add an EPSI formatted preview bitmap to an EPS file\\
+	\bottomrule
+\end{tabular}\\\\
+例子：
+\begin{lstlisting}
+suplane > junk.su
+suplane | sufilter > junk1.su
+supswigb < junk.su title="Wiggle trace" label1="sec" label2="trace number" > junk1.eps
+supsimage < junk.su title="Image Plot" label1="sec" label2="trace number" > junk2.eps
+supscontour < junk.su title="Contour Plot" label1="sec" label2="trace number" > junk3.eps
+supswigb < junk1.su title="Filtered" label1="sec" label2="trace number" > junk4.eps
+\end{lstlisting}
+合并两幅图到一个文件中去：
+\begin{lstlisting}
+merge2 junk1.eps junk2.eps > junk.m2.eps
+\end{lstlisting}
+合并4幅图到一个文件中去：
+\begin{lstlisting}
+merge2 junk1.eps junk2.eps junk3.eps junk4.eps > junk.m4.eps
+\end{lstlisting}
